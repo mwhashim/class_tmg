@@ -32,7 +32,7 @@ AR        = ar rv
 # substitute python3 to python in the line below, or you can simply
 # add a compilation option on the terminal command line:
 # "PYTHON=python3 make all" (Thanks to Marius Millea for python3 compatibility)
-PYTHON ?= python
+PYTHON ?= python3
 
 # your optimization flag
 OPTFLAG = -O3
@@ -45,8 +45,8 @@ OMPFLAG   = -pthread #-fopenmp
 #OMPFLAG   = -openmp
 
 # all other compilation flags
-CCFLAG = -g -fPIC
-LDFLAG = -g -fPIC
+CCFLAG = -g -fPIC -std=gnu99
+LDFLAG = -g -fPIC -lgsl -lgslcblas -lm
 
 # leave blank to compile without HyRec, or put path to HyRec directory
 # (with no slash at the end: e.g. "external/RecfastCLASS")
