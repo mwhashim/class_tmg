@@ -102,6 +102,10 @@ struct background
 
   double Omega0_lambda;    /**< \f$ \Omega_{0_\Lambda} \f$: cosmological constant */
   double Omega0_fld;       /**< \f$ \Omega_{0 de} \f$: fluid */
+  double Omega0_T;         /* TMG */
+  double b;                /* TMG */
+  int lmbrtbrnch;          /* TMG */
+  double E0;               /* TMG */
   double Omega0_scf;       /**< \f$ \Omega_{0 scf} \f$: scalar field */
   short use_ppf; /**< flag switching on PPF perturbation equations instead of true fluid equations for perturbations. It could have been defined inside
                     perturbation structure, but we leave it here in such way to have all fld parameters grouped. */
@@ -168,6 +172,8 @@ struct background
   int index_bg_rho_lambda;    /**< cosmological constant density */
   int index_bg_rho_fld;       /**< fluid density */
   int index_bg_w_fld;         /**< fluid equation of state */
+  int index_bg_rho_TMG;       /**< torsion density */
+  int index_bg_w_TMG;         /**< torsion equation of state */
   int index_bg_rho_idr;       /**< density of interacting dark radiation */
   int index_bg_rho_ur;        /**< relativistic neutrinos/relics density */
   int index_bg_rho_dcdm;      /**< dcdm density */
@@ -182,6 +188,10 @@ struct background
   int index_bg_p_scf;         /**< scalar field pressure */
   int index_bg_p_prime_scf;         /**< scalar field pressure */
 
+  // TMG
+  int index_bg_dfE;           /**< f(T) derivative */
+  int index_bg_ddfE;          /**< f(T) second derivative */
+      
   int index_bg_rho_ncdm1;     /**< density of first ncdm species (others contiguous) */
   int index_bg_p_ncdm1;       /**< pressure of first ncdm species (others contiguous) */
   int index_bg_pseudo_p_ncdm1;/**< another statistical momentum useful in ncdma approximation */
@@ -287,6 +297,7 @@ struct background
   short has_ncdm;      /**< presence of non-cold dark matter? */
   short has_lambda;    /**< presence of cosmological constant? */
   short has_fld;       /**< presence of fluid with constant w and cs2? */
+  short has_TMG;       /**< presence of teleparallel modified gravity? */   
   short has_ur;        /**< presence of ultra-relativistic neutrinos/relics? */
   short has_idr;       /**< presence of interacting dark radiation? */
   short has_curvature; /**< presence of global spatial curvature? */
@@ -568,6 +579,14 @@ extern "C" {
                double phi,
                double phi_prime
                );
+  //TMG  
+  double beta(struct background *pba);
+  double fE (double E, struct  background *pba);
+  double E_root_solve(struct background *pba);
+  double dfE(double TT, struct  background *pba);
+  double ddfE(double TT, struct  background *pba);
+  double ff(double TT, struct background *pba);
+  double EoS_TMG(double TT, struct background *pba);
 
 #ifdef __cplusplus
 }
