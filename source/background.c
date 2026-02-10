@@ -408,7 +408,7 @@ int background_functions(
 
   
   double E, TT; 
-  double rho_TMG, p_TMG, w_tot_nde, w_T;
+  double x_min,x_max, w_tot_nde, w_T;
   double numer, denom, numdenom;    
     
   /** - initialize local variables */
@@ -581,10 +581,10 @@ int background_functions(
   if (pba->has_TMG == _TRUE_){
     pba->E0 = sqrt((rho_tot - pba->K/a/a) * pow(pba->H0, -2.0));
     x_min=0.5;
-    x_max=100*sqrt (rho_tot*pow(pba->H0,-2));
+    x_max=500*pba->E0;
     E = E_root_solve(pba,x_min,x_max);
     //rho_TMG =pow(pba->H0, 2) * (2*pow(E, 2)*pba->b*beta(pba)*pow(pow(E, -2), pba->b)*exp(beta(pba)*pow(pow(E, -2), pba->b)) - pow(E, 2)*exp(beta(pba)*pow(pow(E, -2), pba->b)) + pow(E, 2));
-    TT = -6.0 * pow(pvecback[pba->index_bg_H], 2);
+    TT = -6.0 * pow(E*pba->H0, 2);
     pvecback[pba->index_bg_rho_TMG] = rho_TMG(TT,pba);
     rho_tot += pvecback[pba->index_bg_rho_TMG];
   }
@@ -611,8 +611,8 @@ int background_functions(
         }
       
     pvecback[pba->index_bg_w_TMG] = w_T;  
-    p_TMG = w_T * rho_TMG;  
-    p_tot += p_TMG;
+    //p_TMG = w_T * rho_TMG;  
+    p_tot += p_TMG(TT,pba);
   }
     
   /** - compute derivative of H with respect to conformal time */
@@ -626,8 +626,8 @@ int background_functions(
     
   // Total Density and Pressure (need to check?!)
   if (pba->has_TMG == _TRUE_){
-    pvecback[pba->index_bg_rho_tot] = rho_tot - rho_TMG;
-    pvecback[pba->index_bg_p_tot] = p_tot - p_TMG;
+    pvecback[pba->index_bg_rho_tot] = rho_tot - rho_TMG(TT,pba);
+    pvecback[pba->index_bg_p_tot] = p_tot - p_TMG(TT,pba);
       }
   else{
     pvecback[pba->index_bg_rho_tot] = rho_tot;
@@ -3105,7 +3105,7 @@ double fE (double E, void *params){
     return sqrt(pow(E, 2)*((2*pba->b*beta(pba)*pow(pow(E, -2), pba->b) - 1)*exp(beta(pba)*pow(pow(E, -2), pba->b)) + 1) + pow(pba->E0, 2));
 } else {
     //brent_method need f(E)=0 not f(E)=E
-    return E*E-pow(E, 2)*((2*pba->b*beta(pba)*pow(pow(E, -2), pba->b) - 1)*exp(beta(pba)*pow(pow(E, -2), pba->b)) + 1) + pow(pba->E0, 2);
+    return E*E-pow(E, 2)*((2*pba->b*beta(pba)*pow(pow(E, -2), pba->b) - 1)*exp(beta(pba)*pow(pow(E, -2), pba->b)) + 1) - pow(pba->E0, 2);
    }
 }
 
@@ -3127,7 +3127,7 @@ double E_root_solve(void *params,double x_lower,double x_upper)
        //printf("beta is %0.8f, OmegaT is %0.4f,  E is %0.09f and Diff is %0.8f and E0 is %0.8f \n", beta(pba), pba->Omega0_T, rE0, fabs(rE-rE0), pba->E0);
        }
     return rE;
-      \\brent method
+      //brent method
 } else {
   
     gsl_function F;
@@ -3184,10 +3184,11 @@ double EoS_TMG(double TT, struct background *pba){
     return nom/dom;
 }
 double rho_TMG(double TT, struct background *pba){
-  return -TT-ff/2+TT*dfE;
+  return 1./3*(-TT/2-ff(TT,pba)/2+TT*dfE(TT,pba));
 }
 double p_TMG(double TT, struct background *pba){
   double nom, dom;
-  nom=ff-TT*dfE+2*TT*TT*ddfE;
-  dom=dfE+2*TT*ddfE;
+  nom=ff(TT,pba)-TT*dfE(TT,pba)+2*TT*TT*ddfE(TT,pba);
+  dom=dfE(TT,pba)+2*TT*ddfE(TT,pba);
+    return nom/dom;
 }
