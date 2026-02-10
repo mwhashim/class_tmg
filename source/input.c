@@ -3279,6 +3279,7 @@ int input_read_parameters_species(struct file_content * pfc,
     /* Fill up with torsion field */
     pba->Omega0_T = 1. - pba->Omega0_k - Omega_tot;
     class_read_double("b", pba->b);
+     class_read_double("con", pba->con);
     class_read_int("lmbrtbrnch", pba->lmbrtbrnch);
       
     if (input_verbose > 0){
