@@ -583,8 +583,9 @@ int background_functions(
     x_min=0.5;
     x_max=100*sqrt (rho_tot*pow(pba->H0,-2));
     E = E_root_solve(pba,x_min,x_max);
-    rho_TMG = pow(pba->H0, 2) * (2*pow(E, 2)*pba->b*beta(pba)*pow(pow(E, -2), pba->b)*exp(beta(pba)*pow(pow(E, -2), pba->b)) - pow(E, 2)*exp(beta(pba)*pow(pow(E, -2), pba->b)) + pow(E, 2));
-    pvecback[pba->index_bg_rho_TMG] = rho_TMG;
+    //rho_TMG =pow(pba->H0, 2) * (2*pow(E, 2)*pba->b*beta(pba)*pow(pow(E, -2), pba->b)*exp(beta(pba)*pow(pow(E, -2), pba->b)) - pow(E, 2)*exp(beta(pba)*pow(pow(E, -2), pba->b)) + pow(E, 2));
+    TT = -6.0 * pow(pvecback[pba->index_bg_H], 2);
+    pvecback[pba->index_bg_rho_TMG] = rho_TMG(TT,pba);
     rho_tot += pvecback[pba->index_bg_rho_TMG];
   }
   /** - compute expansion rate H from Friedmann equation: this is the
@@ -594,8 +595,7 @@ int background_functions(
   pvecback[pba->index_bg_H] = sqrt(rho_tot-pba->K/a/a);
 
   // Teleparallel Pressure
-  if (pba->has_TMG == _TRUE_){
-    TT = -6.0 * pow(pvecback[pba->index_bg_H], 2); 
+  if (pba->has_TMG == _TRUE_){ 
     pvecback[pba->index_bg_dfE] = dfE(TT, pba);
     pvecback[pba->index_bg_ddfE] = ddfE(TT, pba);
       
@@ -3182,4 +3182,12 @@ double EoS_TMG(double TT, struct background *pba){
     nom = 2*TT*ff(TT, pba)*ddfE(TT, pba) - 2*TT*pow(dfE(TT, pba), 2) - ff(TT, pba) + dfE(TT, pba)*(-4*pow(TT, 2)*ddfE(TT, pba) + 2*TT + ff(TT, pba));
     dom = -2*TT*pow(dfE(TT, pba), 2) + dfE(TT, pba)*(-4*pow(TT, 2)*ddfE(TT, pba) + TT + ff(TT, pba)) + ddfE(TT, pba)*(2*pow(TT, 2) + 2*TT*ff(TT, pba));
     return nom/dom;
+}
+double rho_TMG(double TT, struct background *pba){
+  return -TT-ff/2+TT*dfE;
+}
+double p_TMG(double TT, struct background *pba){
+  double nom, dom;
+  nom=ff-TT*dfE+2*TT*TT*ddfE;
+  dom=dfE+2*TT*ddfE;
 }
