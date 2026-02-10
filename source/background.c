@@ -580,7 +580,9 @@ int background_functions(
 /* teleparallel modified gravity f(T) */
   if (pba->has_TMG == _TRUE_){
     pba->E0 = sqrt((rho_tot - pba->K/a/a) * pow(pba->H0, -2.0));
-    E = E_root_solve(pba);
+    x_min=0.5;
+    x_max=100*sqrt (rho_tot*pow(pba->H0,-2));
+    E = E_root_solve(pba,x_min,x_max);
     rho_TMG = pow(pba->H0, 2) * (2*pow(E, 2)*pba->b*beta(pba)*pow(pow(E, -2), pba->b)*exp(beta(pba)*pow(pow(E, -2), pba->b)) - pow(E, 2)*exp(beta(pba)*pow(pow(E, -2), pba->b)) + pow(E, 2));
     pvecback[pba->index_bg_rho_TMG] = rho_TMG;
     rho_tot += pvecback[pba->index_bg_rho_TMG];
@@ -3097,13 +3099,21 @@ double beta (struct  background *pba){
     return lmbrt.val + 1/(2*pba->b);
 }
 
-double fE (double E, struct  background *pba){
+double fE (double E, void *params){
+  struct background *pba = (struct background *) params;
+  if (pba->con == 0) {
     return sqrt(pow(E, 2)*((2*pba->b*beta(pba)*pow(pow(E, -2), pba->b) - 1)*exp(beta(pba)*pow(pow(E, -2), pba->b)) + 1) + pow(pba->E0, 2));
+} else {
+    //brent_method need f(E)=0 not f(E)=E
+    return E*E-pow(E, 2)*((2*pba->b*beta(pba)*pow(pow(E, -2), pba->b) - 1)*exp(beta(pba)*pow(pow(E, -2), pba->b)) + 1) + pow(pba->E0, 2);
+   }
 }
 
 // limit-root finding
-double E_root_solve(struct background *pba) 
+double E_root_solve(void *params,double x_lower,double x_upper) 
 {
+    struct background *pba = (struct background *) params;
+    if (pba->con == 1) {
     short ROOTSTAT = _TRUE_;
     double rE0 = 1.0, rE;
 
@@ -3117,7 +3127,40 @@ double E_root_solve(struct background *pba)
        //printf("beta is %0.8f, OmegaT is %0.4f,  E is %0.09f and Diff is %0.8f and E0 is %0.8f \n", beta(pba), pba->Omega0_T, rE0, fabs(rE-rE0), pba->E0);
        }
     return rE;
+      \\brent method
+} else {
+  
+    gsl_function F;
+    F.function = &fE;
+    F.params   = params;
+
+    gsl_root_fsolver *s =
+        gsl_root_fsolver_alloc(gsl_root_fsolver_brent);
+
+    gsl_root_fsolver_set(s, &F, x_lower, x_upper);
+
+    int status, iter = 0;
+    double rE;
+
+    do {
+        iter++;
+        status = gsl_root_fsolver_iterate(s);
+        rE = gsl_root_fsolver_root(s);
+
+        double x_lo = gsl_root_fsolver_x_lower(s);
+        double x_hi = gsl_root_fsolver_x_upper(s);
+
+        status = gsl_root_test_interval(x_lo, x_hi, 0, iterror);
+
+    } while (status == GSL_CONTINUE && iter < 100);
+
+    gsl_root_fsolver_free(s);
+
+    return rE;
 }
+ 
+    }
+
 
 double dfE(double TT, struct background *pba){
     double T_0 = -6.0 * pow(pba->H0,2);
