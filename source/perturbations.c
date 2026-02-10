@@ -6541,7 +6541,7 @@ int perturbations_einstein(
 
   /** - define local variables */
 
-  double k2,a,a2,a_prime_over_a;
+  double k2,a,a2,a_prime_over_a, Hprime;
   double s2_squared;
   double shear_g = 0.;
   double shear_idr = 0.;
@@ -6554,6 +6554,7 @@ int perturbations_einstein(
   a2 = a * a;
   a_prime_over_a = ppw->pvecback[pba->index_bg_H]*a;
   s2_squared = 1.-3.*pba->K/k2;
+  Hprime = ppw->pvecback[pba->index_bg_H_prime]*a; //TMG
 
   /** - sum up perturbations from all species */
   class_call(perturbations_total_stress_energy(ppr,pba,pth,ppt,index_md,k,y,ppw),
