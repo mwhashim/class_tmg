@@ -114,6 +114,7 @@
 
 #include "background.h"
 
+#define iterror 1.e-6 // error for iteration method
 /**
  * Background quantities at given redshift z.
  *
@@ -405,6 +406,11 @@ int background_functions(
      Note: The scalar field contribution must be added in the end, as an exception!*/
   double dp_dloga;
 
+  
+  double E, TT; 
+  double rho_TMG, p_TMG, w_tot_nde, w_T;
+  double numer, denom, numdenom;    
+    
   /** - initialize local variables */
   rho_tot = 0.;
   p_tot = 0.;
@@ -571,21 +577,60 @@ int background_functions(
     p_tot += (1./3.) * pvecback[pba->index_bg_rho_idr];
     rho_r += pvecback[pba->index_bg_rho_idr];
   }
-
+/* teleparallel modified gravity f(T) */
+  if (pba->has_TMG == _TRUE_){
+    pba->E0 = sqrt((rho_tot - pba->K/a/a) * pow(pba->H0, -2.0));
+    E = E_root_solve(pba);
+    rho_TMG = pow(pba->H0, 2) * (2*pow(E, 2)*pba->b*beta(pba)*pow(pow(E, -2), pba->b)*exp(beta(pba)*pow(pow(E, -2), pba->b)) - pow(E, 2)*exp(beta(pba)*pow(pow(E, -2), pba->b)) + pow(E, 2));
+    pvecback[pba->index_bg_rho_TMG] = rho_TMG;
+    rho_tot += pvecback[pba->index_bg_rho_TMG];
+  }
   /** - compute expansion rate H from Friedmann equation: this is the
       only place where the Friedmann equation is assumed. Remember
       that densities are all expressed in units of \f$ [3c^2/8\pi G] \f$, ie
       \f$ \rho_{class} = [8 \pi G \rho_{physical} / 3 c^2]\f$ */
   pvecback[pba->index_bg_H] = sqrt(rho_tot-pba->K/a/a);
 
+  // Teleparallel Pressure
+  if (pba->has_TMG == _TRUE_){
+    TT = -6.0 * pow(pvecback[pba->index_bg_H], 2); 
+    pvecback[pba->index_bg_dfE] = dfE(TT, pba);
+    pvecback[pba->index_bg_ddfE] = ddfE(TT, pba);
+      
+    // TMG equation of state
+    w_tot_nde = p_tot/rho_tot;
+      
+    double T_trs = -1.23e2; // T at transient scale a = 1e-3
+    if (a > 1e-3) {
+        w_T = -1 + (w_tot_nde + 1) *  EoS_TMG(TT, pba);
+        }
+    else {
+        w_T = -1 + (w_tot_nde + 1) *  EoS_TMG(T_trs, pba);
+        }
+      
+    pvecback[pba->index_bg_w_TMG] = w_T;  
+    p_TMG = w_T * rho_TMG;  
+    p_tot += p_TMG;
+  }
+    
   /** - compute derivative of H with respect to conformal time */
   pvecback[pba->index_bg_H_prime] = - (3./2.) * (rho_tot + p_tot) * a + pba->K/a;
 
-  /* Total energy density*/
-  pvecback[pba->index_bg_rho_tot] = rho_tot;
+//   /* Total energy density*/
+//   pvecback[pba->index_bg_rho_tot] = rho_tot;
 
-  /* Total pressure */
-  pvecback[pba->index_bg_p_tot] = p_tot;
+//   /* Total pressure */
+//   pvecback[pba->index_bg_p_tot] = p_tot;
+    
+  // Total Density and Pressure (need to check?!)
+  if (pba->has_TMG == _TRUE_){
+    pvecback[pba->index_bg_rho_tot] = rho_tot - rho_TMG;
+    pvecback[pba->index_bg_p_tot] = p_tot - p_TMG;
+      }
+  else{
+    pvecback[pba->index_bg_rho_tot] = rho_tot;
+    pvecback[pba->index_bg_p_tot] = p_tot; 
+     }
 
   /* Derivative of total pressure w.r.t. conformal time */
   pvecback[pba->index_bg_p_tot_prime] = a*pvecback[pba->index_bg_H]*dp_dloga;
@@ -983,6 +1028,7 @@ int background_indices(
   pba->has_scf = _FALSE_;
   pba->has_lambda = _FALSE_;
   pba->has_fld = _FALSE_;
+  pba->has_TMG = _FALSE_;
   pba->has_ur = _FALSE_;
   pba->has_idr = _FALSE_;
   pba->has_curvature = _FALSE_;
@@ -1011,6 +1057,9 @@ int background_indices(
 
   if (pba->Omega0_fld != 0.)
     pba->has_fld = _TRUE_;
+    
+  if (pba->Omega0_T != 0.)
+    pba->has_TMG = _TRUE_;
 
   if (pba->Omega0_ur != 0.)
     pba->has_ur = _TRUE_;
@@ -1079,7 +1128,13 @@ int background_indices(
   /* - index for fluid */
   class_define_index(pba->index_bg_rho_fld,pba->has_fld,index_bg,1);
   class_define_index(pba->index_bg_w_fld,pba->has_fld,index_bg,1);
-
+  
+  /* - index for TMG */
+  class_define_index(pba->index_bg_rho_TMG,pba->has_TMG,index_bg,1);
+  class_define_index(pba->index_bg_w_TMG,pba->has_TMG,index_bg,1);
+  class_define_index(pba->index_bg_dfE,pba->has_TMG,index_bg,1);
+  class_define_index(pba->index_bg_ddfE,pba->has_TMG,index_bg,1);
+    
   /* - index for ultra-relativistic neutrinos/species */
   class_define_index(pba->index_bg_rho_ur,pba->has_ur,index_bg,1);
 
@@ -1773,6 +1828,11 @@ int background_checks(
   /*class_test((pba->Omega0_k < _OMEGAK_SMALL_)||(pba->Omega0_k > _OMEGAK_BIG_),
     pba->error_message,
     "Omegak = %g out of bounds (%g<Omegak<%g) \n",pba->Omega0_k,_OMEGAK_SMALL_,_OMEGAK_BIG_);*/
+    
+  /* if has teleparallel gravity*/
+  if (pba->has_TMG == _TRUE_) {
+  class_call(beta(pba), pba->error_message, pba->error_message);
+  }
 
   /* fluid equation of state */
   if (pba->has_fld == _TRUE_) {
@@ -2452,6 +2512,10 @@ int background_output_titles(
   class_store_columntitle(titles,"(.)rho_lambda",pba->has_lambda);
   class_store_columntitle(titles,"(.)rho_fld",pba->has_fld);
   class_store_columntitle(titles,"(.)w_fld",pba->has_fld);
+  class_store_columntitle(titles,"(.)rho_T",pba->has_TMG);  
+  class_store_columntitle(titles,"(.)w_T",pba->has_TMG);
+  class_store_columntitle(titles,"(.)df_T",pba->has_TMG);
+  class_store_columntitle(titles,"(.)df_TT",pba->has_TMG);
   class_store_columntitle(titles,"(.)rho_ur",pba->has_ur);
   class_store_columntitle(titles,"(.)rho_idr",pba->has_idr);
   class_store_columntitle(titles,"(.)rho_crit",_TRUE_);
@@ -2528,6 +2592,10 @@ int background_output_data(
     class_store_double(dataptr,pvecback[pba->index_bg_rho_lambda],pba->has_lambda,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_fld],pba->has_fld,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_w_fld],pba->has_fld,storeidx);
+    class_store_double(dataptr,pvecback[pba->index_bg_rho_TMG],pba->has_TMG,storeidx);
+    class_store_double(dataptr,pvecback[pba->index_bg_w_TMG],pba->has_TMG,storeidx);
+    class_store_double(dataptr,pvecback[pba->index_bg_dfE],pba->has_TMG,storeidx);
+    class_store_double(dataptr,pvecback[pba->index_bg_ddfE],pba->has_TMG,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_ur],pba->has_ur,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_idr],pba->has_idr,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_rho_crit],_TRUE_,storeidx);
@@ -2855,6 +2923,10 @@ int background_output_budget(
       class_print_species("Dark Energy Fluid",fld);
       budget_other+=pba->Omega0_fld;
     }
+    if (pba->has_TMG == _TRUE_) {
+      class_print_species("Teleparallel Gravity", T);
+      budget_other+=pba->Omega0_T;
+    }
     if (pba->has_scf == _TRUE_) {
       class_print_species("Scalar Field",scf);
       budget_other+=pba->Omega0_scf;
@@ -3004,4 +3076,67 @@ double ddV_scf(
                struct background *pba,
                double phi) {
   return ddV_e_scf(pba,phi)*V_p_scf(pba,phi) + 2*dV_e_scf(pba,phi)*dV_p_scf(pba,phi) + V_e_scf(pba,phi)*ddV_p_scf(pba,phi);
+}
+
+/*Teleparallel Modified Gravity definations*/
+double beta (struct  background *pba){
+    double lmbrt_input;
+    gsl_sf_result lmbrt;
+    lmbrt_input = -(1. - pba->Omega0_T)*sqrt(exp(-1/pba->b))/(2*pba->b);
+    // pass gsl error to class
+    if (pba->lmbrtbrnch == 0){
+        class_call(gsl_sf_lambert_W0_e(lmbrt_input, &lmbrt), 
+                   pba->error_message,
+                   pba->error_message);}
+    else if (pba->lmbrtbrnch == -1){
+         class_call(gsl_sf_lambert_Wm1_e(lmbrt_input, &lmbrt), 
+               pba->error_message,
+               pba->error_message);   
+    }
+    //return gsl_sf_lambert_W0(-(1. - pba->Omega0_T)*sqrt(exp(-1/pba->b))/(2*pba->b)) + 1/(2*pba->b);
+    return lmbrt.val + 1/(2*pba->b);
+}
+
+double fE (double E, struct  background *pba){
+    return sqrt(pow(E, 2)*((2*pba->b*beta(pba)*pow(pow(E, -2), pba->b) - 1)*exp(beta(pba)*pow(pow(E, -2), pba->b)) + 1) + pow(pba->E0, 2));
+}
+
+// limit-root finding
+double E_root_solve(struct background *pba) 
+{
+    short ROOTSTAT = _TRUE_;
+    double rE0 = 1.0, rE;
+
+    while(ROOTSTAT == _TRUE_){
+       rE = fE(rE0, pba);
+       if (fabs(rE-rE0) <= iterror){
+           //printf("beta is %0.8f, OmegaT is %0.4f,  Diff is %0.8f and E0 is %0.8f \n", beta(pba), pba->Omega0_T, fabs(rE-rE0), pba->E0);
+           ROOTSTAT  = _FALSE_;
+       }
+       rE0 = rE;
+       //printf("beta is %0.8f, OmegaT is %0.4f,  E is %0.09f and Diff is %0.8f and E0 is %0.8f \n", beta(pba), pba->Omega0_T, rE0, fabs(rE-rE0), pba->E0);
+       }
+    return rE;
+}
+
+double dfE(double TT, struct background *pba){
+    double T_0 = -6.0 * pow(pba->H0,2);
+    return (-pba->b*beta(pba)*pow(T_0/TT, pba->b) + 1)*exp(beta(pba)*pow(T_0/TT, pba->b));
+}
+
+double ddfE(double TT, struct background *pba){
+    double T_0 = -6.0 * pow(pba->H0,2); 
+    return pba->b*beta(pba)*pow(T_0/TT, pba->b)*(pba->b*beta(pba)*pow(T_0/TT, pba->b) + pba->b - 1)*exp(beta(pba)*pow(T_0/TT, pba->b))/TT;
+}
+
+double ff(double TT, struct background *pba){
+    double T_0 = -6.0 * pow(pba->H0,2); 
+    return TT*exp(beta(pba)*pow(T_0/TT, pba->b));
+}
+
+double EoS_TMG(double TT, struct background *pba){
+    double nom, dom;
+    nom = 2*TT*ff(TT, pba)*ddfE(TT, pba) - 2*TT*pow(dfE(TT, pba), 2) - ff(TT, pba) + dfE(TT, pba)*(-4*pow(TT, 2)*ddfE(TT, pba) + 2*TT + ff(TT, pba));
+    dom = -2*TT*pow(dfE(TT, pba), 2) + dfE(TT, pba)*(-4*pow(TT, 2)*ddfE(TT, pba) + TT + ff(TT, pba)) + ddfE(TT, pba)*(2*pow(TT, 2) + 2*TT*ff(TT, pba));
+    return nom/dom;
 }
