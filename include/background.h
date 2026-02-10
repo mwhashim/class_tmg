@@ -111,6 +111,7 @@ struct background
   double b;                /* TMG */
   int lmbrtbrnch;          /* TMG */
   double E0;               /* TMG */
+  double con;               /* TMG */
   double Omega0_scf;       /**< \f$ \Omega_{0 scf} \f$: scalar field */
   short use_ppf; /**< flag switching on PPF perturbation equations instead of true fluid equations for perturbations. It could have been defined inside
                     perturbation structure, but we leave it here in such way to have all fld parameters grouped. */
@@ -586,13 +587,14 @@ extern "C" {
                );
   //TMG  
   double beta(struct background *pba);
-  double fE (double E, struct  background *pba);
-  double E_root_solve(struct background *pba);
+  double fE (double E, void *params);
+  double E_root_solve(void *params,double x_min,double x_max);
   double dfE(double TT, struct  background *pba);
   double ddfE(double TT, struct  background *pba);
   double ff(double TT, struct background *pba);
   double EoS_TMG(double TT, struct background *pba);
-
+  double rho_TMG (double TT, struct background *pba);
+  double p_TMG (double TT, struct background *pba);
 #ifdef __cplusplus
 }
 #endif
