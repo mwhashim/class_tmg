@@ -13,7 +13,7 @@ GCCPATH_STRING = sbp.Popen(
     stdout=sbp.PIPE).communicate()[0]
 GCCPATH = osp.normpath(osp.dirname(GCCPATH_STRING)).decode()
 
-liblist = ["class"]
+liblist = ["class", "gsl", "gslcblas", "m"]
 MVEC_STRING = sbp.Popen(
     ['gcc', '-lmvec'],
     stderr=sbp.PIPE).communicate()[1]
@@ -45,7 +45,8 @@ classy_ext = Extension("classy", [os.path.join(classy_folder, "classy.pyx")],
                            library_dirs=[root_folder, GCCPATH],
                            #extra_link_args=['-lgomp'],
                            language="c++",
-                           extra_compile_args=["-std=c++11"]
+                           extra_compile_args=["-std=c++11"],
+                           extra_link_args=["-lgomp", "-lgsl", "-lgslcblas", "-lm"],
                        )
 import sys
 classy_ext.cython_directives = {'language_level': "3" if sys.version_info.major>=3 else "2"}
