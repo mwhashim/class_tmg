@@ -10,6 +10,11 @@
 #include "dei_rkck.h"
 #include "parser.h"
 
+#include <gsl/gsl_errno.h>
+#include <gsl/gsl_math.h>
+#include <gsl/gsl_roots.h>
+#include <gsl/gsl_sf_lambert.h>
+
 /** list of possible parametrisations of the DE equation of state */
 
 enum equation_of_state {CLP,EDE};
