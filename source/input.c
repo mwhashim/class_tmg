@@ -3200,13 +3200,19 @@ int input_read_parameters_species(struct file_content * pfc,
   class_call(parser_read_double(pfc,"Omega_scf",&param3,&flag3,errmsg),
              errmsg,
              errmsg);
-  /* Test */
-  class_test((flag1 == _TRUE_) && (flag2 == _TRUE_) && ((flag3 == _FALSE_) || (param3 >= 0.)),
+  class_call(parser_read_double(pfc,"Omega_T",&param4,&flag4,errmsg),
              errmsg,
-             "'Omega_Lambda' or 'Omega_fld' must be left unspecified, except if 'Omega_scf' is set and < 0.");
-  class_test(((flag1 == _FALSE_)||(flag2 == _FALSE_)) && ((flag3 == _TRUE_) && (param3 < 0.)),
+             errmsg); /* TMG */
+  /* Test with TMG included*/ 
+  class_test((flag1 == _TRUE_) && (flag2 == _TRUE_) && ((flag3 == _FALSE_) || (param3 >= 0.)) && ((flag4 == _FALSE_) || (param4 >= 0.)),
              errmsg,
-             "You have entered 'Omega_scf' < 0 , so you have to specify both 'Omega_lambda' and 'Omega_fld'.");
+             "'Omega_Lambda' or 'Omega_fld' or 'Omega_T' must be left unspecified, except if 'Omega_scf' is set and < 0. or 'Omega_T' is set and < 0.");
+//   class_test(((flag1 == _FALSE_)||(flag2 == _FALSE_)) && ((flag3 == _TRUE_) && (param3 < 0.)),
+//              errmsg,
+//              "You have entered 'Omega_scf' < 0 , so you have to specify both 'Omega_lambda' and 'Omega_fld'.");
+      class_test(((flag1 == _FALSE_)||(flag2 == _FALSE_)||(flag3 == _FALSE_)) && ((flag4 == _TRUE_) && (param4 < 0.)),
+             errmsg,
+             "You have entered 'Omega_T' < 0 , so you have to specify both 'Omega_lambda' and 'Omega_fld'.");
   /* Complete set of parameters
      Case of (flag3 == _FALSE_) || (param3 >= 0.) means that either we have not
      read Omega_scf so we are ignoring it (unlike lambda and fld!) OR we have
@@ -3239,6 +3245,13 @@ int input_read_parameters_species(struct file_content * pfc,
     pba->Omega0_scf = param3;
     Omega_tot += pba->Omega0_scf;
   }
+  /* TMG */
+  if ((flag4 == _TRUE_) && (param4 >= 0.)){
+    pba->Omega0_T = param4;
+    class_read_double("b",pba->b);
+    class_read_int("lmbrtbrnch",pba->lmbrtbrnch);
+    Omega_tot += pba->Omega0_T;
+  }  
   /* Step 2 */
   if (flag1 == _FALSE_) {
     /* Fill with Lambda */
@@ -3259,6 +3272,17 @@ int input_read_parameters_species(struct file_content * pfc,
     pba->Omega0_scf = 1. - pba->Omega0_k - Omega_tot;
     if (input_verbose > 0){
       printf(" -> matched budget equations by adjusting Omega_scf = %g\n",pba->Omega0_scf);
+    }
+  }
+  /* TMG */
+  else if ((flag4 == _TRUE_) && (param4 < 0.)){
+    /* Fill up with torsion field */
+    pba->Omega0_T = 1. - pba->Omega0_k - Omega_tot;
+    class_read_double("b", pba->b);
+    class_read_int("lmbrtbrnch", pba->lmbrtbrnch);
+      
+    if (input_verbose > 0){
+      printf(" -> matched budget equations by adjusting Omega_T = %g\n",pba->Omega0_T);
     }
   }
 
