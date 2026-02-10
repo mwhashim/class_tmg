@@ -6545,6 +6545,7 @@ int perturbations_einstein(
   double s2_squared;
   double shear_g = 0.;
   double shear_idr = 0.;
+  double zeta_TMG;
 
   /** - define wavenumber and scale factor related quantities */
 
@@ -6578,13 +6579,23 @@ int perturbations_einstein(
          more stable is we treat phi as a dynamical variable
          y[ppw->pv->index_pt_phi], which derivative is given by the
          second equation below (credits to Guido Walter Pettinari). */
+      /* Teleparallel Modified Gravity TMG*/
+      if (pba->has_TMG == _TRUE_) {
+        /* equation for zeta */   
+        zeta_TMG = (3./k2) * (1.5/ppw->pvecback[pba->index_bg_dfE] * (a2/k2) * ppw->rho_plus_p_theta - a_prime_over_a * (Hprime) * (12./a2 * ppw->pvecback[pba->index_bg_ddfE]/ppw->pvecback[pba->index_bg_dfE] + 1./pow(a_prime_over_a,2))* y[ppw->pv->index_pt_phi]);
+        /* equation for psi */
+        ppw->pvecmetric[ppw->index_mt_psi] = y[ppw->pv->index_pt_phi] - 4.5/ppw->pvecback[pba->index_bg_dfE] * (a2/k2) * ppw->rho_plus_p_shear - 12.* zeta_TMG * a_prime_over_a * (Hprime) * ppw->pvecback[pba->index_bg_ddfE]/ppw->pvecback[pba->index_bg_dfE];
 
+        /* equation for phi' */
+        ppw->pvecmetric[ppw->index_mt_phi_prime] = -a_prime_over_a * ppw->pvecmetric[ppw->index_mt_psi] + 1.5/ppw->pvecback[pba->index_bg_dfE] * (a2/k2) * ppw->rho_plus_p_theta - 12./a2 * ppw->pvecback[pba->index_bg_ddfE]/ppw->pvecback[pba->index_bg_dfE] * a_prime_over_a * (Hprime) * y[ppw->pv->index_pt_phi];
+      }
+      else{
       /* equation for psi */
       ppw->pvecmetric[ppw->index_mt_psi] = y[ppw->pv->index_pt_phi] - 4.5 * (a2/k2) * ppw->rho_plus_p_shear;
 
       /* equation for phi' */
       ppw->pvecmetric[ppw->index_mt_phi_prime] = -a_prime_over_a * ppw->pvecmetric[ppw->index_mt_psi] + 1.5 * (a2/k2) * ppw->rho_plus_p_theta;
-
+      }
       /* eventually, infer radiation streaming approximation for
          gamma and ur (this is exactly the right place to do it
          because the result depends on h_prime) */
