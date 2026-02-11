@@ -3101,7 +3101,7 @@ double beta (struct  background *pba){
 
 double fE (double E, void *params){
   struct background *pba = (struct background *) params;
-  if (pba->con == 0) {
+  if (pba->con == 1) {
     return sqrt(pow(E, 2)*((2*pba->b*beta(pba)*pow(pow(E, -2), pba->b) - 1)*exp(beta(pba)*pow(pow(E, -2), pba->b)) + 1) + pow(pba->E0, 2));
 } else {
     //brent_method need f(E)=0 not f(E)=E
@@ -3110,10 +3110,10 @@ double fE (double E, void *params){
 }
 
 // limit-root finding
-double E_root_solve(void *params,double x_lower,double x_upper) 
+double E_root_solve(void *params, double x_lower,double x_upper) 
 {
-    struct background *pba = (struct background *) params;
-    if (pba->con == 1) {
+   struct background *pba = (struct background *) params;
+   if (pba->con == 1) {
     short ROOTSTAT = _TRUE_;
     double rE0 = 1.0, rE;
 
@@ -3128,7 +3128,8 @@ double E_root_solve(void *params,double x_lower,double x_upper)
        }
     return rE;
       //brent method
-} else {
+   }
+   else {
   
     gsl_function F;
     F.function = &fE;
