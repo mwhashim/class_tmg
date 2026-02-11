@@ -3101,7 +3101,7 @@ double beta (struct  background *pba){
 
 double fE (double E, void *params){
   struct background *pba = (struct background *) params;
-  if (pba->con == 0) {
+  if (pba->con == 1) {
     return sqrt(pow(E, 2)*((2*pba->b*beta(pba)*pow(pow(E, -2), pba->b) - 1)*exp(beta(pba)*pow(pow(E, -2), pba->b)) + 1) + pow(pba->E0, 2));
 } else {
     //brent_method need f(E)=0 not f(E)=E
