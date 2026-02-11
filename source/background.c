@@ -584,7 +584,7 @@ int background_functions(
     x_max=500*pba->E0;
     E = E_root_solve(pba,x_min,x_max);
     //rho_TMG =pow(pba->H0, 2) * (2*pow(E, 2)*pba->b*beta(pba)*pow(pow(E, -2), pba->b)*exp(beta(pba)*pow(pow(E, -2), pba->b)) - pow(E, 2)*exp(beta(pba)*pow(pow(E, -2), pba->b)) + pow(E, 2));
-    TT = -6.0 * pow(E*pba->H0, 2);
+    TT = 6.0 * pow(E*pba->H0, 2);
     pvecback[pba->index_bg_rho_TMG] = rho_TMG(TT,pba);
     rho_tot += pvecback[pba->index_bg_rho_TMG];
   }
@@ -3193,5 +3193,5 @@ double p_TMG(double TT, struct background *pba){
   double nom, dom;
   nom=ff(TT,pba)-TT*dfE(TT,pba)+2*TT*TT*ddfE(TT,pba);
   dom=dfE(TT,pba)+2*TT*ddfE(TT,pba);
-    return nom/6.0*dom;
+    return nom/(6.0*dom);
 }
