@@ -3098,14 +3098,17 @@ double beta (struct  background *pba){
     //return gsl_sf_lambert_W0(-(1. - pba->Omega0_T)*sqrt(exp(-1/pba->b))/(2*pba->b)) + 1/(2*pba->b);
     return lmbrt.val + 1/(2*pba->b);
 }
-
+double yE(double TT,struct background *pba){
+    double T0=6.0*pow(pba->H0,2);
+    return -(2.0*TT*dfE(TT,pba)-TT-ff(TT,pba))/(pba->Omega0_T*T0);
+}
 double fE (double E, void *params){
   struct background *pba = (struct background *) params;
   if (pba->con == 1) {
-    return sqrt(pow(E, 2)*((2*pba->b*beta(pba)*pow(pow(E, -2), pba->b) - 1)*exp(beta(pba)*pow(pow(E, -2), pba->b)) + 1) + pow(pba->E0, 2));
+    return sqrt(pba->Omega0_T*yE(TT,pba) + pow(pba->E0, 2));
 } else {
     //brent_method need f(E)=0 not f(E)=E
-    return E*E-pow(E, 2)*((2*pba->b*beta(pba)*pow(pow(E, -2), pba->b) - 1)*exp(beta(pba)*pow(pow(E, -2), pba->b)) + 1) - pow(pba->E0, 2);
+    return E*E-pba->Omega0_T*yE(TT,pba)- pow(pba->E0, 2);
    }
 }
 
@@ -3184,11 +3187,11 @@ double EoS_TMG(double TT, struct background *pba){
     return nom/dom;
 }
 double rho_TMG(double TT, struct background *pba){
-  return 1./3*(-TT/2-ff(TT,pba)/2+TT*dfE(TT,pba));
+  return 1./3*(TT/2+ff(TT,pba)/2-TT*dfE(TT,pba));
 }
 double p_TMG(double TT, struct background *pba){
   double nom, dom;
   nom=ff(TT,pba)-TT*dfE(TT,pba)+2*TT*TT*ddfE(TT,pba);
   dom=dfE(TT,pba)+2*TT*ddfE(TT,pba);
-    return nom/dom;
+    return nom/6.0*dom;
 }
