@@ -3104,6 +3104,7 @@ double yE(double TT,struct background *pba){
 }
 double fE (double E, void *params){
   struct background *pba = (struct background *) params;
+  double TT = 6.0*E*E*pow(pba->H0,2.0);
   if (pba->con == 1) {
     return sqrt(pba->Omega0_T*yE(TT,pba) + pow(pba->E0, 2));
 } else {
@@ -3166,32 +3167,32 @@ double E_root_solve(void *params,double x_lower,double x_upper)
 
 
 double dfE(double TT, struct background *pba){
-    double T_0 = -6.0 * pow(pba->H0,2);
+    double T_0 = 6.0 * pow(pba->H0,2);
     return (-pba->b*beta(pba)*pow(T_0/TT, pba->b) + 1)*exp(beta(pba)*pow(T_0/TT, pba->b));
 }
 
 double ddfE(double TT, struct background *pba){
-    double T_0 = -6.0 * pow(pba->H0,2); 
+    double T_0 = 6.0 * pow(pba->H0,2); 
     return pba->b*beta(pba)*pow(T_0/TT, pba->b)*(pba->b*beta(pba)*pow(T_0/TT, pba->b) + pba->b - 1)*exp(beta(pba)*pow(T_0/TT, pba->b))/TT;
 }
 
 double ff(double TT, struct background *pba){
-    double T_0 = -6.0 * pow(pba->H0,2); 
+    double T_0 = 6.0 * pow(pba->H0,2); 
     return TT*exp(beta(pba)*pow(T_0/TT, pba->b));
 }
 
 double EoS_TMG(double TT, struct background *pba){
     double nom, dom;
-    nom = 2*TT*ff(TT, pba)*ddfE(TT, pba) - 2*TT*pow(dfE(TT, pba), 2) - ff(TT, pba) + dfE(TT, pba)*(-4*pow(TT, 2)*ddfE(TT, pba) + 2*TT + ff(TT, pba));
-    dom = -2*TT*pow(dfE(TT, pba), 2) + dfE(TT, pba)*(-4*pow(TT, 2)*ddfE(TT, pba) + TT + ff(TT, pba)) + ddfE(TT, pba)*(2*pow(TT, 2) + 2*TT*ff(TT, pba));
-    return nom/dom;
+    //nom = 2*TT*ff(TT, pba)*ddfE(TT, pba) - 2*TT*pow(dfE(TT, pba), 2) - ff(TT, pba) + dfE(TT, pba)*(-4*pow(TT, 2)*ddfE(TT, pba) + 2*TT + ff(TT, pba));
+    //dom = -2*TT*pow(dfE(TT, pba), 2) + dfE(TT, pba)*(-4*pow(TT, 2)*ddfE(TT, pba) + TT + ff(TT, pba)) + ddfE(TT, pba)*(2*pow(TT, 2) + 2*TT*ff(TT, pba));
+    return p_TMG(TT,pba)/rho_TMG(TT,pba);
 }
 double rho_TMG(double TT, struct background *pba){
   return 1./3*(TT/2+ff(TT,pba)/2-TT*dfE(TT,pba));
 }
 double p_TMG(double TT, struct background *pba){
   double nom, dom;
-  nom=ff(TT,pba)-TT*dfE(TT,pba)+2*TT*TT*ddfE(TT,pba);
+  nom=-ff(TT,pba)+TT*dfE(TT,pba)-2*TT*TT*ddfE(TT,pba);
   dom=dfE(TT,pba)+2*TT*ddfE(TT,pba);
     return nom/(6.0*dom);
 }
