@@ -6541,7 +6541,8 @@ int perturbations_einstein(
 
   /** - define local variables */
 
-  double k2,a,a2,a_prime_over_a, Hprime;
+  double k2,a,a2,a_prime_over_a, aH_prime;
+  double Quo, Xai;
   double s2_squared;
   double shear_g = 0.;
   double shear_idr = 0.;
@@ -6554,8 +6555,11 @@ int perturbations_einstein(
   a2 = a * a;
   a_prime_over_a = ppw->pvecback[pba->index_bg_H]*a;
   s2_squared = 1.-3.*pba->K/k2;
-  Hprime = ppw->pvecback[pba->index_bg_H_prime]*a; //TMG
-
+  aH_prime = ppw->pvecback[pba->index_bg_H_prime]*a + pow(a_prime_over_a,2);
+  //Hprime = ppw->pvecback[pba->index_bg_H_prime]*a; //TMG
+  Quo = 1./ppw->pvecback[pba->index_bg_dfE];
+  Xai = 12. * (aH_prime - pow(a_prime_over_a,2)) * Quo * ppw->pvecback[pba->index_bg_ddfE];
+  
   /** - sum up perturbations from all species */
   class_call(perturbations_total_stress_energy(ppr,pba,pth,ppt,index_md,k,y,ppw),
              ppt->error_message,
@@ -6580,15 +6584,25 @@ int perturbations_einstein(
          more stable is we treat phi as a dynamical variable
          y[ppw->pv->index_pt_phi], which derivative is given by the
          second equation below (credits to Guido Walter Pettinari). */
-      /* Teleparallel Modified Gravity TMG*/
+      /* ------------- Teleparallel Modified Gravity TMG --------------------  */
+      // old definations
+//       if (pba->has_TMG == _TRUE_) {
+//         /* equation for zeta */   
+//         zeta_TMG = (3./k2) * (1.5/ppw->pvecback[pba->index_bg_dfE] * (a2/k2) * ppw->rho_plus_p_theta - a_prime_over_a * (Hprime) * (12./a2 * ppw->pvecback[pba->index_bg_ddfE]/ppw->pvecback[pba->index_bg_dfE] + 1./pow(a_prime_over_a,2))* y[ppw->pv->index_pt_phi]);
+//         /* equation for psi */
+//         ppw->pvecmetric[ppw->index_mt_psi] = y[ppw->pv->index_pt_phi] - 4.5/ppw->pvecback[pba->index_bg_dfE] * (a2/k2) * ppw->rho_plus_p_shear - 12.* zeta_TMG * a_prime_over_a * (Hprime) * ppw->pvecback[pba->index_bg_ddfE]/ppw->pvecback[pba->index_bg_dfE];
+
+//         /* equation for phi' */
+//         ppw->pvecmetric[ppw->index_mt_phi_prime] = -a_prime_over_a * ppw->pvecmetric[ppw->index_mt_psi] + 1.5/ppw->pvecback[pba->index_bg_dfE] * (a2/k2) * ppw->rho_plus_p_theta - 12./a2 * ppw->pvecback[pba->index_bg_ddfE]/ppw->pvecback[pba->index_bg_dfE] * a_prime_over_a * (Hprime) * y[ppw->pv->index_pt_phi];
+//       }
       if (pba->has_TMG == _TRUE_) {
         /* equation for zeta */   
-        zeta_TMG = (3./k2) * (1.5/ppw->pvecback[pba->index_bg_dfE] * (a2/k2) * ppw->rho_plus_p_theta - a_prime_over_a * (Hprime) * (12./a2 * ppw->pvecback[pba->index_bg_ddfE]/ppw->pvecback[pba->index_bg_dfE] + 1./pow(a_prime_over_a,2))* y[ppw->pv->index_pt_phi]);
+        zeta_TMG = (3./k2) * ((a_prime_over_a/a2 * (a2 - Xai) - aH_prime/a_prime_over_a) * y[ppw->pv->index_pt_phi] + 1.5 * Quo * (a2/k2) * ppw->rho_plus_p_theta);
         /* equation for psi */
-        ppw->pvecmetric[ppw->index_mt_psi] = y[ppw->pv->index_pt_phi] - 4.5/ppw->pvecback[pba->index_bg_dfE] * (a2/k2) * ppw->rho_plus_p_shear - 12.* zeta_TMG * a_prime_over_a * (Hprime) * ppw->pvecback[pba->index_bg_ddfE]/ppw->pvecback[pba->index_bg_dfE];
+        ppw->pvecmetric[ppw->index_mt_psi] = y[ppw->pv->index_pt_phi] - 4.5*Quo*(a2/k2) * ppw->rho_plus_p_shear - a_prime_over_a * Xai * zeta_TMG;
 
         /* equation for phi' */
-        ppw->pvecmetric[ppw->index_mt_phi_prime] = -a_prime_over_a * ppw->pvecmetric[ppw->index_mt_psi] + 1.5/ppw->pvecback[pba->index_bg_dfE] * (a2/k2) * ppw->rho_plus_p_theta - 12./a2 * ppw->pvecback[pba->index_bg_ddfE]/ppw->pvecback[pba->index_bg_dfE] * a_prime_over_a * (Hprime) * y[ppw->pv->index_pt_phi];
+        ppw->pvecmetric[ppw->index_mt_phi_prime] = 1.5 * Quo * (a2/k2) * ppw->rho_plus_p_theta - a_prime_over_a * ppw->pvecmetric[ppw->index_mt_psi]  - a_prime_over_a/a2 * Xai * y[ppw->pv->index_pt_phi];
       }
       else{
       /* equation for psi */
