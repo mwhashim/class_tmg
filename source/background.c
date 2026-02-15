@@ -3104,14 +3104,13 @@ double yE(double TT,struct background *pba){
 }
 double fE (double E, void *params){
   struct background *pba = (struct background *) params;
-<<<<<<< HEAD
-  if (pba->con == 1) {
-    return sqrt(pow(E, 2)*((2*pba->b*beta(pba)*pow(pow(E, -2), pba->b) - 1)*exp(beta(pba)*pow(pow(E, -2), pba->b)) + 1) + pow(pba->E0, 2));
-=======
+// <<<<<<< old
+//   if (pba->con == 1) {
+//     return sqrt(pow(E, 2)*((2*pba->b*beta(pba)*pow(pow(E, -2), pba->b) - 1)*exp(beta(pba)*pow(pow(E, -2), pba->b)) + 1) + pow(pba->E0, 2));
+// =======
   double TT = 6.0*E*E*pow(pba->H0,2.0);
   if (pba->con == 1) {
     return sqrt(pba->Omega0_T*yE(TT,pba) + pow(pba->E0, 2));
->>>>>>> 02ab2c3210204572735cea86ff4eab7d8313d685
 } else {
     //brent_method need f(E)=0 not f(E)=E
     return E*E-pba->Omega0_T*yE(TT,pba)- pow(pba->E0, 2);
