@@ -408,7 +408,7 @@ int background_functions(
 
   
   double E, TT; 
-  double x_min,x_max, w_tot_nde, w_T;
+  double x_min,x_max, w_T; //w_tot_nde
   double numer, denom, numdenom;    
     
   /** - initialize local variables */
@@ -600,14 +600,16 @@ int background_functions(
     pvecback[pba->index_bg_ddfE] = ddfE(TT, pba);
       
     // TMG equation of state
-    w_tot_nde = p_tot/rho_tot;
+    pba->w_tot_nde = p_tot/rho_tot;
       
     double T_trs = -1.23e2; // T at transient scale a = 1e-3
     if (a > 1e-3) {
-        w_T = -1 + (w_tot_nde + 1) *  EoS_TMG(TT, pba);
+        //w_T = -1 + (w_tot_nde + 1) *  EoS_TMG(TT, pba);
+        w_T = EoS_TMG(TT, pba);
         }
     else {
-        w_T = -1 + (w_tot_nde + 1) *  EoS_TMG(T_trs, pba);
+        //w_T = -1 + (w_tot_nde + 1) *  EoS_TMG(T_trs, pba);
+        w_T = EoS_TMG(T_trs, pba);
         }  
       
     pvecback[pba->index_bg_w_TMG] = w_T;  
@@ -3192,15 +3194,16 @@ double rho_TMG(double TT, struct background *pba){
   return 1./3*(TT/2+ff(TT,pba)/2-TT*dfE(TT,pba));
 }
 double p_TMG(double TT, struct background *pba){
-  double nom, dom;
-  nom=-ff(TT,pba)+TT*dfE(TT,pba)-2*TT*TT*ddfE(TT,pba);
-  dom=dfE(TT,pba)+2*TT*ddfE(TT,pba);
-    return nom/(6.0*dom);
+  return -1/6.0 * (TT + ff(TT,pba) - 2.0 * TT * dfE(TT,pba)) - 2./3. * (1 + pba->w_tot_nde) * (ff(TT,pba) - 2.0 * TT * dfE(TT,pba))/(4*(dfE(TT,pba)+2*TT*ddfE(TT,pba))) * (1.0 - dfE(TT,pba) -  2.0 * TT * ddfE(TT,pba));
+//   double nom, dom;
+//   nom=-ff(TT,pba)+TT*dfE(TT,pba)-2*TT*TT*ddfE(TT,pba);
+//   dom=dfE(TT,pba)+2*TT*ddfE(TT,pba);
+//     return nom/(6.0*dom);
 }
 
 
 double EoS_TMG(double TT, struct background *pba){
-    double nom, dom;
+//     double nom, dom;
     //nom = 2*TT*ff(TT, pba)*ddfE(TT, pba) - 2*TT*pow(dfE(TT, pba), 2) - ff(TT, pba) + dfE(TT, pba)*(-4*pow(TT, 2)*ddfE(TT, pba) + 2*TT + ff(TT, pba));
     //dom = -2*TT*pow(dfE(TT, pba), 2) + dfE(TT, pba)*(-4*pow(TT, 2)*ddfE(TT, pba) + TT + ff(TT, pba)) + ddfE(TT, pba)*(2*pow(TT, 2) + 2*TT*ff(TT, pba));
     return p_TMG(TT,pba)/rho_TMG(TT,pba);

@@ -111,6 +111,7 @@ struct background
   double b;                /* TMG */
   int lmbrtbrnch;          /* TMG */
   double E0;               /* TMG */
+  double w_tot_nde;        /* TMG */
   double con;               /* TMG */
   double Omega0_scf;       /**< \f$ \Omega_{0 scf} \f$: scalar field */
   short use_ppf; /**< flag switching on PPF perturbation equations instead of true fluid equations for perturbations. It could have been defined inside
