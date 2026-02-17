@@ -3085,24 +3085,41 @@ double ddV_scf(
 /*Teleparallel Modified Gravity definations*/
 double ff(double TT, struct background *pba){
     double T_0 = 6.0 * pow(pba->H0,2); 
-    return TT*exp(beta(pba)*pow(T_0/TT, pba->b)); //TT +  pba->Omega0_T * T_0;
+    return (TT+pba->alpha*sqrt(T_0*T))*exp(beta(pba)*pow(T_0/TT, pba->b)); //TT +  pba->Omega0_T * T_0;
 }
 
 
 double dfE(double TT, struct background *pba){
-    double T_0 = 6.0 * pow(pba->H0,2);
-    return (-pba->b*beta(pba)*pow(T_0/TT, pba->b) + 1)*exp(beta(pba)*pow(T_0/TT, pba->b));
+    double T_0 = 6.0 * pow(pba->H0, 2);
+    double b = pba->b;
+    double bb = beta(pba);
+    double ratio = pow(T_0 / TT, b);
+    double x = exp(bb * ratio);
+    double term1 = (1.0 + 0.5 * pba->alpha * T_0 / sqrt(T_0 * TT)) * x;
+    double term2 = -bb * b * ratio * ff(TT, pba) / TT;
+    return term1 + term2;
 }
 
 double ddfE(double TT, struct background *pba){
-    double T_0 = 6.0 * pow(pba->H0,2); 
-    return pba->b*beta(pba)*pow(T_0/TT, pba->b)*(pba->b*beta(pba)*pow(T_0/TT, pba->b) + pba->b - 1)*exp(beta(pba)*pow(T_0/TT, pba->b))/TT;
+    double T_0 = 6.0 * pow(pba->H0, 2);
+    double b = pba->b;
+    double bb = beta(pba);
+    double alpha = pba->alpha;
+    double ratio = pow(T_0 / TT, b);
+    double x = exp(bb * ratio);
+    return -1.0/4.0*(alpha*T_0*T_0*x)/pow(T_0*TT,3.0/2.0)
+      -2.0*(1.0+1.0/2.0*alpha*T_0/sqrt(T_0*TT))*bb*ratio*b*x/TT
+      +ff(TT,pba)*bb*b*ratio/(TT*TT)*(b+1+bb*b*ratio);
 }
 
 double beta (struct  background *pba){
+      if (pba->alpha==-1.0){
+        return log(1.0-pba->Omega0_T);
+    }
+  else {
     double lmbrt_input;
     gsl_sf_result lmbrt;
-    lmbrt_input = -(1. - pba->Omega0_T)*sqrt(exp(-1/pba->b))/(2*pba->b);
+    lmbrt_input = -(1.0-pba->Omega0_T)/(2.0*pba->b*(1.0+pba->alpha))*exp(-1.0/(2.0*pba->b*(1.0+pba->alpha)));
     // pass gsl error to class
     if (pba->lmbrtbrnch == 0){
         class_call(gsl_sf_lambert_W0_e(lmbrt_input, &lmbrt), 
@@ -3114,9 +3131,9 @@ double beta (struct  background *pba){
                pba->error_message);   
     }
     //return gsl_sf_lambert_W0(-(1. - pba->Omega0_T)*sqrt(exp(-1/pba->b))/(2*pba->b)) + 1/(2*pba->b);
-    return lmbrt.val + 1/(2*pba->b);
+    return lmbrt.val + 1.0/(2.0*pba->b*(1+pba->alpha));
 }
-
+}
 double yE(double TT,struct background *pba){
     double T0=6.0*pow(pba->H0,2);
     return -(2.0*TT*dfE(TT,pba)-TT-ff(TT,pba))/(pba->Omega0_T*T0);
