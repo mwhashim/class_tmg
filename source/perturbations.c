@@ -6558,7 +6558,7 @@ int perturbations_einstein(
   aH_prime = ppw->pvecback[pba->index_bg_H_prime]*a + pow(a_prime_over_a,2);
   //Hprime = ppw->pvecback[pba->index_bg_H_prime]*a; //TMG
   Quo = 1./ppw->pvecback[pba->index_bg_dfE];
-  Xai = 12. * (aH_prime - pow(a_prime_over_a,2)) * Quo * ppw->pvecback[pba->index_bg_ddfE];
+  Xai = -12. * (aH_prime - pow(a_prime_over_a,2)) * Quo * ppw->pvecback[pba->index_bg_ddfE]; // fix Xi sign
   
   /** - sum up perturbations from all species */
   class_call(perturbations_total_stress_energy(ppr,pba,pth,ppt,index_md,k,y,ppw),

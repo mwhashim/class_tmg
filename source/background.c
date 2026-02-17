@@ -608,7 +608,7 @@ int background_functions(
         }
     else {
         w_T = -1 + (w_tot_nde + 1) *  EoS_TMG(T_trs, pba);
-        }
+        }  
       
     pvecback[pba->index_bg_w_TMG] = w_T;  
     //p_TMG = w_T * rho_TMG;  
