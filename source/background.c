@@ -408,7 +408,8 @@ int background_functions(
 
   
   double E, TT; 
-  double x_min,x_max, w_T; //w_tot_nde
+  double x_min, x_max;
+  double w_T, rho_T, p_T;
   double numer, denom, numdenom;    
     
   /** - initialize local variables */
@@ -585,8 +586,27 @@ int background_functions(
     x_max=500*pba->E0;
     E = E_root_solve(pba,x_min,x_max);
     TT = 6.0 * pow(E*pba->H0, 2);
-    pvecback[pba->index_bg_rho_TMG] = rho_TMG(TT,pba);
+    pvecback[pba->index_bg_dfE] = dfE(TT, pba);
+    pvecback[pba->index_bg_ddfE] = ddfE(TT, pba);
+    pba->w_tot_nde = p_tot/rho_tot;  
+
+    // TMG equation of state  
+    double T_trs = 1.23e2;//-1.23e2; // T at transient scale a = 1e-3
+    if (a > 1e-3) {
+        rho_T = rho_TMG(TT,pba);
+        p_T = p_TMG(TT,pba); 
+        w_T = EoS_TMG(TT, pba);
+        }
+    else {
+        rho_T = rho_TMG(T_trs,pba);
+        p_T = p_TMG(T_trs,pba);
+        w_T = EoS_TMG(T_trs, pba);
+        }  
+      
+    pvecback[pba->index_bg_rho_TMG] = rho_T;
+    pvecback[pba->index_bg_w_TMG] = w_T;  
     rho_tot += pvecback[pba->index_bg_rho_TMG];
+    p_tot += p_T;  
   }
   /** - compute expansion rate H from Friedmann equation: this is the
       only place where the Friedmann equation is assumed. Remember
@@ -594,26 +614,6 @@ int background_functions(
       \f$ \rho_{class} = [8 \pi G \rho_{physical} / 3 c^2]\f$ */
   pvecback[pba->index_bg_H] = sqrt(rho_tot-pba->K/a/a);
 
-  // Teleparallel Pressure
-  if (pba->has_TMG == _TRUE_){ 
-    pvecback[pba->index_bg_dfE] = dfE(TT, pba);
-    pvecback[pba->index_bg_ddfE] = ddfE(TT, pba);
-      
-    // TMG equation of state
-    pba->w_tot_nde = p_tot/rho_tot;
-      
-    double T_trs = 1.23e2;//-1.23e2; // T at transient scale a = 1e-3
-    if (a > 1e-3) {
-        w_T = EoS_TMG(TT, pba);
-        }
-    else {
-        w_T = EoS_TMG(T_trs, pba);
-        }  
-      
-    pvecback[pba->index_bg_w_TMG] = w_T;  
-    p_tot += p_TMG(TT,pba);
-  }
-    
   /** - compute derivative of H with respect to conformal time */
   pvecback[pba->index_bg_H_prime] = - (3./2.) * (rho_tot + p_tot) * a + pba->K/a;
 
@@ -625,8 +625,8 @@ int background_functions(
     
   // Total Density and Pressure (need to check?!)
   if (pba->has_TMG == _TRUE_){
-    pvecback[pba->index_bg_rho_tot] = rho_tot - rho_TMG(TT,pba);
-    pvecback[pba->index_bg_p_tot] = p_tot - p_TMG(TT,pba);
+    pvecback[pba->index_bg_rho_tot] = rho_tot - rho_T;
+    pvecback[pba->index_bg_p_tot] = p_tot - p_T;
       }
   else{
     pvecback[pba->index_bg_rho_tot] = rho_tot;
