@@ -3085,7 +3085,7 @@ double ddV_scf(
 /*Teleparallel Modified Gravity definations*/
 double ff(double TT, struct background *pba){
     double T_0 = 6.0 * pow(pba->H0,2); 
-    return (TT+pba->alpha*sqrt(T_0*T))*exp(beta(pba)*pow(T_0/TT, pba->b)); //TT +  pba->Omega0_T * T_0;
+    return (TT+pba->alpha*sqrt(T_0*TT))*exp(beta(pba)*pow(T_0/TT, pba->b)); //TT +  pba->Omega0_T * T_0;
 }
 
 
