@@ -881,11 +881,13 @@ int background_init(
   class_call(background_solve(ppr,pba),
              pba->error_message,
              pba->error_message);
-if ( (pba->b < 1.0/2.0&& beta(pba)>0.0) || (pba->b > 1.0/2.0&& beta(pba)<0.0)){
+if (has_TMG == _TRUE_){
+  if ( (pba->b < 1.0/2.0&& beta(pba)>0.0) || (pba->b > 1.0/2.0&& beta(pba)<0.0)){
    class_call(background_find_trans(pba),
              pba->error_message,
              pba->error_message);
  }
+}
   /** - find and store a few derived parameters at radiation-matter equality */
   class_call(background_find_equality(ppr,pba),
              pba->error_message,
