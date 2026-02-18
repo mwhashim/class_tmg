@@ -602,7 +602,7 @@ int background_functions(
     // TMG equation of state
     pba->w_tot_nde = p_tot/rho_tot;
       
-    double T_trs = -1.23e2; // T at transient scale a = 1e-3
+    double T_trs = 1.23e2;//-1.23e2; // T at transient scale a = 1e-3
     if (a > 1e-3) {
         //w_T = -1 + (w_tot_nde + 1) *  EoS_TMG(TT, pba);
         w_T = EoS_TMG(TT, pba);
