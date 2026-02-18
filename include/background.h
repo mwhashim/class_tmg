@@ -115,6 +115,10 @@ struct background
   double w_tot_nde;        /* TMG */
   enum rootmthd  root_method; /* TMG */
   double alpha;            /* TMG */
+  double tau_tr;  /* TMG */
+  double H_tr; /* TMG */
+  double z_tr; /* TMG */
+  double a_tr; /* TMG */
   double Omega0_scf;       /**< \f$ \Omega_{0 scf} \f$: scalar field */
   short use_ppf; /**< flag switching on PPF perturbation equations instead of true fluid equations for perturbations. It could have been defined inside
                     perturbation structure, but we leave it here in such way to have all fld parameters grouped. */
@@ -527,7 +531,9 @@ extern "C" {
                                struct precision *ppr,
                                struct background *pba
                                );
-
+  int background_find_trans(
+                               struct background *pba
+                               );
 
   int background_output_titles(struct background * pba,
                                char titles[_MAXTITLESTRINGLENGTH_]
