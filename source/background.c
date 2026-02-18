@@ -881,7 +881,11 @@ int background_init(
   class_call(background_solve(ppr,pba),
              pba->error_message,
              pba->error_message);
-
+if ( (pba->b < 1.0/2.0&& beta(pba)>0.0) || (pba->b > 1.0/2.0&& beta(pba)<0.0)){
+   class_call(background_find_trans(pba),
+             pba->error_message,
+             pba->error_message);
+ }
   /** - find and store a few derived parameters at radiation-matter equality */
   class_call(background_find_equality(ppr,pba),
              pba->error_message,
@@ -3205,3 +3209,68 @@ double EoS_TMG(double TT, struct background *pba){
     return p_TMG(TT,pba)/rho_TMG(TT,pba);
 }
 
+
+int background_find_trans(
+                             struct background *pba
+                             ) {
+
+  int index_tau_minus = 0;
+  int index_tau_plus = pba->bt_size-1;
+  int index_tau_mid = 0;
+  double H , rho, TT;
+  double tau_minus,tau_plus,tau_mid=0.;
+  double * pvecback;
+  while ((index_tau_plus - index_tau_minus) > 1) {
+
+    index_tau_mid = (int)(0.5*(index_tau_plus+index_tau_minus));
+
+    H = pba->background_table[index_tau_mid*pba->bg_size+pba->index_bg_H];
+    TT = 6.0*H*H;
+    rho = rho_TMG(TT,pba);
+    if (rho > 0)
+      index_tau_plus = index_tau_mid;
+    else
+      index_tau_minus = index_tau_mid;
+
+  }
+
+
+  tau_minus = pba->tau_table[index_tau_minus];
+  tau_plus =  pba->tau_table[index_tau_plus];
+
+  class_alloc(pvecback,pba->bg_size*sizeof(double),pba->error_message);
+
+  while ((tau_plus - tau_minus) > 1e-6) {
+
+    tau_mid = 0.5*(tau_plus+tau_minus);
+
+    class_call(background_at_tau(pba,tau_mid,long_info,inter_closeby,&index_tau_minus,pvecback),
+               pba->error_message,
+               pba->error_message);
+
+    H = pvecback[pba->index_bg_H];
+    TT = 6.0*H*H;
+    rho = rho_TMG(TT,pba);
+    if (rho > 0.0)
+      tau_plus = tau_mid;
+    else
+      tau_minus = tau_mid;
+
+  }
+
+  pba->a_tr = pvecback[pba->index_bg_a];
+  pba->H_tr = pvecback[pba->index_bg_H];
+  pba->z_tr = 1./pba->a_tr -1.;
+  pba->tau_tr = tau_mid;
+
+  if (pba->background_verbose > 0) {
+    printf(" -> the model has Dark denisty transformation from negative to posative\n");
+    printf("  densty transtion at z = %f\n",pba->z_tr);
+    printf("    corresponding to conformal time = %f Mpc\n",pba->tau_tr);
+  }
+
+  free(pvecback);
+
+  return _SUCCESS_;
+
+}
