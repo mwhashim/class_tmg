@@ -580,6 +580,7 @@ int background_functions(
 /* teleparallel modified gravity f(T) */
   if (pba->has_TMG == _TRUE_){
     pba->E0 = sqrt((rho_tot - pba->K/a/a) * pow(pba->H0, -2.0));
+    pba->T_0 = 6.0*pow(pba->H0,2);
     x_min=0.5;
     x_max=500*pba->E0;
     E = E_root_solve(pba,x_min,x_max);
@@ -3084,31 +3085,31 @@ double ddV_scf(
 
 /*Teleparallel Modified Gravity definations*/
 double ff(double TT, struct background *pba){
-    double T_0 = 6.0 * pow(pba->H0,2); 
-    return (TT+pba->alpha*sqrt(T_0*TT))*exp(beta(pba)*pow(T_0/TT, pba->b)); //TT +  pba->Omega0_T * T_0;
+    //double T_0 = 6.0 * pow(pba->H0,2); 
+    return (TT+pba->alpha*sqrt(pba->T_0*TT))*exp(beta(pba)*pow(pba->T_0/TT, pba->b)); //TT +  pba->Omega0_T * T_0;
 }
 
 
 double dfE(double TT, struct background *pba){
-    double T_0 = 6.0 * pow(pba->H0, 2);
+    //double T_0 = 6.0 * pow(pba->H0, 2);
     double b = pba->b;
     double bb = beta(pba);
-    double ratio = pow(T_0 / TT, b);
+    double ratio = pow(pba->T_0 / TT, b);
     double x = exp(bb * ratio);
-    double term1 = (1.0 + 0.5 * pba->alpha * T_0 / sqrt(T_0 * TT)) * x;
+    double term1 = (1.0 + 0.5 * pba->alpha * pba->T_0 / sqrt(pba->T_0 * TT)) * x;
     double term2 = -bb * b * ratio * ff(TT, pba) / TT;
     return term1 + term2;
 }
 
 double ddfE(double TT, struct background *pba){
-    double T_0 = 6.0 * pow(pba->H0, 2);
+    //double T_0 = 6.0 * pow(pba->H0, 2);
     double b = pba->b;
     double bb = beta(pba);
     double alpha = pba->alpha;
-    double ratio = pow(T_0 / TT, b);
+    double ratio = pow(pba->T_0 / TT, b);
     double x = exp(bb * ratio);
-    return -1.0/4.0*(alpha*T_0*T_0*x)/pow(T_0*TT,3.0/2.0)
-      -2.0*(1.0+1.0/2.0*alpha*T_0/sqrt(T_0*TT))*bb*ratio*b*x/TT
+    return -1.0/4.0*(alpha*pba->T_0*pba->T_0*x)/pow(pba->T_0*TT,3.0/2.0)
+      -2.0*(1.0+1.0/2.0*alpha*pba->T_0/sqrt(pba->T_0*TT))*bb*ratio*b*x/TT
       +ff(TT,pba)*bb*b*ratio/(TT*TT)*(b+1+bb*b*ratio);
 }
 
@@ -3135,8 +3136,8 @@ double beta (struct  background *pba){
 }
 }
 double yE(double TT,struct background *pba){
-    double T0=6.0*pow(pba->H0,2);
-    return -(2.0*TT*dfE(TT,pba)-TT-ff(TT,pba))/(pba->Omega0_T*T0);
+    //double T0=6.0*pow(pba->H0,2);
+    return -(2.0*TT*dfE(TT,pba)-TT-ff(TT,pba))/(pba->Omega0_T*pba->T_0);
 }
 
 double fE (double E, void *params){
