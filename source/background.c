@@ -584,7 +584,6 @@ int background_functions(
     x_min=0.5;
     x_max=500*pba->E0;
     E = E_root_solve(pba,x_min,x_max);
-    //rho_TMG =pow(pba->H0, 2) * (2*pow(E, 2)*pba->b*beta(pba)*pow(pow(E, -2), pba->b)*exp(beta(pba)*pow(pow(E, -2), pba->b)) - pow(E, 2)*exp(beta(pba)*pow(pow(E, -2), pba->b)) + pow(E, 2));
     TT = 6.0 * pow(E*pba->H0, 2);
     pvecback[pba->index_bg_rho_TMG] = rho_TMG(TT,pba);
     rho_tot += pvecback[pba->index_bg_rho_TMG];
@@ -605,16 +604,13 @@ int background_functions(
       
     double T_trs = 1.23e2;//-1.23e2; // T at transient scale a = 1e-3
     if (a > 1e-3) {
-        //w_T = -1 + (w_tot_nde + 1) *  EoS_TMG(TT, pba);
         w_T = EoS_TMG(TT, pba);
         }
     else {
-        //w_T = -1 + (w_tot_nde + 1) *  EoS_TMG(T_trs, pba);
         w_T = EoS_TMG(T_trs, pba);
         }  
       
     pvecback[pba->index_bg_w_TMG] = w_T;  
-    //p_TMG = w_T * rho_TMG;  
     p_tot += p_TMG(TT,pba);
   }
     
@@ -3085,13 +3081,11 @@ double ddV_scf(
 
 /*Teleparallel Modified Gravity definations*/
 double ff(double TT, struct background *pba){
-    //double T_0 = 6.0 * pow(pba->H0,2); 
     return (TT+pba->alpha*sqrt(pba->T_0*TT))*exp(beta(pba)*pow(pba->T_0/TT, pba->b)); //TT +  pba->Omega0_T * T_0;
 }
 
 
 double dfE(double TT, struct background *pba){
-    //double T_0 = 6.0 * pow(pba->H0, 2);
     double b = pba->b;
     double bb = beta(pba);
     double ratio = pow(pba->T_0 / TT, b);
@@ -3102,7 +3096,6 @@ double dfE(double TT, struct background *pba){
 }
 
 double ddfE(double TT, struct background *pba){
-    //double T_0 = 6.0 * pow(pba->H0, 2);
     double b = pba->b;
     double bb = beta(pba);
     double alpha = pba->alpha;
@@ -3131,99 +3124,84 @@ double beta (struct  background *pba){
                pba->error_message,
                pba->error_message);   
     }
-    //return gsl_sf_lambert_W0(-(1. - pba->Omega0_T)*sqrt(exp(-1/pba->b))/(2*pba->b)) + 1/(2*pba->b);
     return lmbrt.val + 1.0/(2.0*pba->b*(1+pba->alpha));
 }
 }
 double yE(double TT,struct background *pba){
-    //double T0=6.0*pow(pba->H0,2);
     return -(2.0*TT*dfE(TT,pba)-TT-ff(TT,pba))/(pba->Omega0_T*pba->T_0);
 }
 
 double fE (double E, void *params){
   struct background *pba = (struct background *) params;
-// <<<<<<< old
-//   if (pba->con == 1) {
-//     return sqrt(pow(E, 2)*((2*pba->b*beta(pba)*pow(pow(E, -2), pba->b) - 1)*exp(beta(pba)*pow(pow(E, -2), pba->b)) + 1) + pow(pba->E0, 2));
-// =======
   double TT = 6.0*E*E*pow(pba->H0,2.0);
-  if (pba->con == 1) {
-    return sqrt(pba->Omega0_T*yE(TT,pba) + pow(pba->E0, 2));
-} else {
-    //brent_method need f(E)=0 not f(E)=E
-    return E*E-pba->Omega0_T*yE(TT,pba)- pow(pba->E0, 2);
-   }
+  switch (pba->root_method){
+      case fixedpoint:
+          return sqrt(pba->Omega0_T*yE(TT,pba) + pow(pba->E0, 2));
+          break;
+      case brent:
+          //brent_method need f(E)=0 not f(E)=E
+          return E*E-pba->Omega0_T*yE(TT,pba)- pow(pba->E0, 2);
+          break;
+  } 
 }
 
 // limit-root finding
-double E_root_solve(void *params, double x_lower,double x_upper) 
-{
-   struct background *pba = (struct background *) params;
-   if (pba->con == 1) {
-    short ROOTSTAT = _TRUE_;
-    double rE0 = 1.0, rE;
-
-    while(ROOTSTAT == _TRUE_){
-       rE = fE(rE0, pba);
-       if (fabs(rE-rE0) <= iterror){
-           //printf("beta is %0.8f, OmegaT is %0.4f,  Diff is %0.8f and E0 is %0.8f \n", beta(pba), pba->Omega0_T, fabs(rE-rE0), pba->E0);
-           ROOTSTAT  = _FALSE_;
-       }
-       rE0 = rE;
-       //printf("beta is %0.8f, OmegaT is %0.4f,  E is %0.09f and Diff is %0.8f and E0 is %0.8f \n", beta(pba), pba->Omega0_T, rE0, fabs(rE-rE0), pba->E0);
-       }
-    return rE;
+double E_root_solve(void *params, double x_lower, double x_upper) {
+  struct background *pba = (struct background *) params;
+  short ROOTSTAT = _TRUE_;
+  double rE0 = 1.0, rE;
+  gsl_function F; 
+  // fixed point
+  switch (pba->root_method){
+      case fixedpoint:
+        while(ROOTSTAT == _TRUE_){
+            rE = fE(rE0, pba);
+            if (fabs(rE-rE0) <= iterror){
+            ROOTSTAT  = _FALSE_;
+            }
+            rE0 = rE;
+        }
+        return rE;
+        break;
       //brent method
-   }
-   else {
-  
-    gsl_function F;
-    F.function = &fE;
-    F.params   = params;
+      case brent:
+        F.function = &fE;
+        F.params   = params;
 
-    gsl_root_fsolver *s =
-        gsl_root_fsolver_alloc(gsl_root_fsolver_brent);
+        gsl_root_fsolver *s =
+            gsl_root_fsolver_alloc(gsl_root_fsolver_brent);
 
-    gsl_root_fsolver_set(s, &F, x_lower, x_upper);
+        gsl_root_fsolver_set(s, &F, x_lower, x_upper);
 
-    int status, iter = 0;
-    double rE;
+        int status, iter = 0;
+        double rE;
 
-    do {
-        iter++;
-        status = gsl_root_fsolver_iterate(s);
-        rE = gsl_root_fsolver_root(s);
+        do {
+            iter++;
+            status = gsl_root_fsolver_iterate(s);
+            rE = gsl_root_fsolver_root(s);
 
-        double x_lo = gsl_root_fsolver_x_lower(s);
-        double x_hi = gsl_root_fsolver_x_upper(s);
+            double x_lo = gsl_root_fsolver_x_lower(s);
+            double x_hi = gsl_root_fsolver_x_upper(s);
 
-        status = gsl_root_test_interval(x_lo, x_hi, 0, iterror);
+            status = gsl_root_test_interval(x_lo, x_hi, 0, iterror);
 
-    } while (status == GSL_CONTINUE && iter < 100);
+        } while (status == GSL_CONTINUE && iter < 100);
 
-    gsl_root_fsolver_free(s);
+        gsl_root_fsolver_free(s);
 
-    return rE;
-}
- 
+        return rE;
+        break;
     }
+}
 
 double rho_TMG(double TT, struct background *pba){
   return 1./3*(TT/2+ff(TT,pba)/2-TT*dfE(TT,pba));
 }
 double p_TMG(double TT, struct background *pba){
   return -1/6.0 * (TT + ff(TT,pba) - 2.0 * TT * dfE(TT,pba)) - 2./3. * (1 + pba->w_tot_nde) * (ff(TT,pba) - 2.0 * TT * dfE(TT,pba))/(4*(dfE(TT,pba)+2*TT*ddfE(TT,pba))) * (1.0 - dfE(TT,pba) -  2.0 * TT * ddfE(TT,pba));
-//   double nom, dom;
-//   nom=-ff(TT,pba)+TT*dfE(TT,pba)-2*TT*TT*ddfE(TT,pba);
-//   dom=dfE(TT,pba)+2*TT*ddfE(TT,pba);
-//     return nom/(6.0*dom);
 }
-
-
 double EoS_TMG(double TT, struct background *pba){
-//     double nom, dom;
-    //nom = 2*TT*ff(TT, pba)*ddfE(TT, pba) - 2*TT*pow(dfE(TT, pba), 2) - ff(TT, pba) + dfE(TT, pba)*(-4*pow(TT, 2)*ddfE(TT, pba) + 2*TT + ff(TT, pba));
-    //dom = -2*TT*pow(dfE(TT, pba), 2) + dfE(TT, pba)*(-4*pow(TT, 2)*ddfE(TT, pba) + TT + ff(TT, pba)) + ddfE(TT, pba)*(2*pow(TT, 2) + 2*TT*ff(TT, pba));
     return p_TMG(TT,pba)/rho_TMG(TT,pba);
 }
 

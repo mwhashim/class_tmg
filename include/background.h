@@ -18,7 +18,7 @@
 /** list of possible parametrisations of the DE equation of state */
 
 enum equation_of_state {CLP,EDE};
-
+enum rootmthd {fixedpoint,brent};
 
 /** list of possible parametrizations of the varying fundamental constants */
 
@@ -113,7 +113,7 @@ struct background
   double E0;               /* TMG */
   double T_0;              /* TMG */
   double w_tot_nde;        /* TMG */
-  double con;              /* TMG */
+  enum rootmthd  root_method; /* TMG */
   double alpha;            /* TMG */
   double Omega0_scf;       /**< \f$ \Omega_{0 scf} \f$: scalar field */
   short use_ppf; /**< flag switching on PPF perturbation equations instead of true fluid equations for perturbations. It could have been defined inside

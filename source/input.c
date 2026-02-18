@@ -3279,8 +3279,20 @@ int input_read_parameters_species(struct file_content * pfc,
     /* Fill up with torsion field */
     pba->Omega0_T = 1. - pba->Omega0_k - Omega_tot;
     class_read_double("b", pba->b);
-     class_read_double("con", pba->con);
-          class_read_double("alpha", pba->alpha);
+    class_call(parser_read_string(pfc,"root_method",&string1,&flag1,errmsg), errmsg, errmsg);
+        /* Complete set of parameters */
+        if (flag1 == _TRUE_) {
+          if (strstr(string1,"fixedpoint") != NULL) {
+            pba->root_method = fixedpoint;
+          }
+          else if (strstr(string1,"brent") != NULL) {
+            pba->root_method = brent;
+          }
+          else {
+            class_stop(errmsg,"incomprehensible input '%s' for the field 'root finding method' ",string1);
+          }
+        }  
+    class_read_double("alpha", pba->alpha);
     class_read_int("lmbrtbrnch", pba->lmbrtbrnch);
       
     if (input_verbose > 0){
