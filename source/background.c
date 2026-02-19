@@ -3212,67 +3212,46 @@ double EoS_TMG(double TT, struct background *pba){
 }
 
 
-int background_find_trans(
-                             struct background *pba
-                             ) {
+int background_find_trans(struct background *pba) {
 
-  int index_tau_minus = 0;
-  int index_tau_plus = pba->bt_size-1;
-  int index_tau_mid = 0;
-  double H , rho, TT;
-  double tau_minus,tau_plus,tau_mid=0.;
+  int index_z_minus = 0;
+  int index_z_plus =0;
+  int index_z_mid = 0;
+  double H = 0., rho = 0., TT = 0.;
+    double z_minus = 0 , z_plus = 0 , z_mid = 0 , tau_mid = 0;
   double * pvecback;
-  while ((index_tau_plus - index_tau_minus) > 1) {
+  z_minus = 0;
+  z_plus = 10;
 
-    index_tau_mid = (int)(0.5*(index_tau_plus+index_tau_minus));
+  class_alloc(pvecback, pba->bg_size * sizeof(double), pba->error_message);
 
-    H = pba->background_table[index_tau_mid*pba->bg_size+pba->index_bg_H];
-    TT = 6.0*H*H;
-    rho = rho_TMG(TT,pba);
-    if (rho > 0)
-      index_tau_plus = index_tau_mid;
-    else
-      index_tau_minus = index_tau_mid;
+  while ((z_plus - z_minus) > 1e-7 ) {
+    z_mid = 0.5 * (z_plus + z_minus);
 
-  }
-
-
-  tau_minus = pba->tau_table[index_tau_minus];
-  tau_plus =  pba->tau_table[index_tau_plus];
-
-  class_alloc(pvecback,pba->bg_size*sizeof(double),pba->error_message);
-
-  while ((tau_plus - tau_minus) > 1e-6) {
-
-    tau_mid = 0.5*(tau_plus+tau_minus);
-
-    class_call(background_at_tau(pba,tau_mid,long_info,inter_closeby,&index_tau_minus,pvecback),
-               pba->error_message,
-               pba->error_message);
+    class_call(background_at_z(pba, z_mid, long_info, inter_closeby, &index_z_minus, pvecback),
+               pba->error_message, pba->error_message);
+    class_call(background_tau_of_z(pba, z_mid,  &tau_mid),
+               pba->error_message, pba->error_message);
 
     H = pvecback[pba->index_bg_H];
-    TT = 6.0*H*H;
-    rho = rho_TMG(TT,pba);
-    if (rho > 0.0)
-      tau_plus = tau_mid;
-    else
-      tau_minus = tau_mid;
+    TT = 6.0 * H * H;
+    rho = rho_TMG(TT, pba);
 
+    if (rho < 0.0) z_plus = z_mid;
+    else z_minus = z_mid;
+    
+    pba->a_tr = pvecback[pba->index_bg_a];
+    pba->H_tr = pvecback[pba->index_bg_H];
+    pba->tau_tr = tau_mid;
+    pba->z_tr = -1.0 + 1.0/pba->a_tr;
   }
 
-  pba->a_tr = pvecback[pba->index_bg_a];
-  pba->H_tr = pvecback[pba->index_bg_H];
-  pba->z_tr = 1./pba->a_tr -1.;
-  pba->tau_tr = tau_mid;
+
 
   if (pba->background_verbose > 0) {
-    printf(" -> the model has Dark denisty transformation from negative to posative\n");
-    printf("  densty transtion at z = %f\n",pba->z_tr);
-    printf("    corresponding to conformal time = %f Mpc\n",pba->tau_tr);
+    printf(" -> TMG transition found at z = %f (tau = %f)\n", pba->z_tr, pba->tau_tr);
   }
 
   free(pvecback);
-
   return _SUCCESS_;
-
 }
