@@ -86,6 +86,7 @@ cdef extern from "class.h":
         double Omega0_b
         double Omega0_idr
         double T_idr
+        double z_tr
         double Omega0_cdm
         double Omega0_idm
         double Omega0_dcdm
