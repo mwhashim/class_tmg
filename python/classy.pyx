@@ -156,6 +156,10 @@ cdef class Class:
       """Return the effective fractional contribution of curvature to the density today"""
       return CallableFloat(self.ba.Omega0_k)
     @property
+    def z_tr(self):
+        """Return the transition redshift for the TMG model"""
+        return CallableFloat(self.ba.z_tr)
+    @property
     def Omega_cdm(self):
       """Return the fractional cold dark matter density today"""
       return CallableFloat(self.ba.Omega0_cdm)
@@ -3628,6 +3632,8 @@ cdef class Class:
                 value = self.th.tau_d
             elif name == 'ds_d':
                 value = self.th.ds_d
+            elif name == 'z_tr':
+                value = self.z_tr
             elif name == 'ds_d_h':
                 value = self.th.ds_d*self.ba.h
             elif name == 'rs_d':
