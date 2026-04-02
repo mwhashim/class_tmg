@@ -59,7 +59,7 @@ classy_ext = Extension("classy._classy", [os.path.join("python", "classy.pyx")],
                        libraries=liblist,
                        library_dirs=[root_folder, GCCPATH],
                        language="c++",
-                       extra_compile_args=["-std=c++11"],
+                       extra_compile_args=["-std=c++11", "-O3", "-march=native", "-fno-strict-aliasing"],
                        depends=["libclass.a","python/cclassy.pxd"],
                        extra_link_args=["-lgomp", "-lgsl", "-lgslcblas", "-lm"],
                        )

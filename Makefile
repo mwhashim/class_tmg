@@ -19,7 +19,7 @@ vpath .base build
 ########################################################
 
 # your C compiler:
-CC       = gcc
+CC       = gcc -std=gnu99
 #CC       = icc
 #CC       = pgcc
 CPP      = g++ --std=c++11 -fpermissive -Wno-write-strings
@@ -35,17 +35,17 @@ AR        = ar rv
 PYTHON ?= python3.9
 
 # your optimization flag
-OPTFLAG = -O3
-#OPTFLAG = -Ofast -ffast-math #-march=native
+OPTFLAG = -O3 -march=cascadelake -mtune=cascadelake -flto -mprefer-vector-width=512 #-O3 #-ffast-math -march=native
+#OPTFLAG = -Ofast -ffast-math -march=native
 #OPTFLAG = -fast
 
 # your openmp flag (comment for compiling without openmp)
-OMPFLAG   = -pthread #-fopenmp
+OMPFLAG   = -pthread -fopenmp
 #OMPFLAG   = -mp -mp=nonuma -mp=allcores -g
-#OMPFLAG   = -openmp
+#OMPFLAG   = -fopenmp
 
 # all other compilation flags
-CCFLAG = -g -fPIC -std=gnu99
+CCFLAG = -g -fPIC #-std=gnu99
 LDFLAG = -g -fPIC -lgsl -lgslcblas -lm
 
 # leave blank to compile without HyRec, or put path to HyRec directory

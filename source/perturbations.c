@@ -6767,7 +6767,12 @@ int perturbations_einstein(
   if (_tensors_) {
 
     /* single einstein equation for tensor perturbations */
+    if (pba->has_TMG == _TRUE_) {
+    ppw->pvecmetric[ppw->index_mt_gw_prime_prime] = -a_prime_over_a * (2. + Xai/a2) *y[ppw->pv->index_pt_gwdot]-(k2+2.*pba->K)*y[ppw->pv->index_pt_gw]+ppw->gw_source;
+    }
+    else{
     ppw->pvecmetric[ppw->index_mt_gw_prime_prime] = -2.*a_prime_over_a*y[ppw->pv->index_pt_gwdot]-(k2+2.*pba->K)*y[ppw->pv->index_pt_gw]+ppw->gw_source;
+    }
 
   }
 
